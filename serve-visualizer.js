@@ -7,7 +7,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const PORT = 8080;
+const PORT = parseInt(process.env.PORT, 10) || 8080;
 
 const MIME_TYPES = {
   '.html': 'text/html',
