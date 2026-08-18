@@ -8,14 +8,14 @@
   "description": "Node.js CLI for ARC-AGI-3 game API",
   "scripts": {
     "init": "node init.js",
-    "list-games": "node list-games.js",
-    "open-scorecard": "node open-scorecard.js",
-    "close-scorecard": "node close-scorecard.js",
-    "start-game": "node start-game.js",
-    "reset-game": "node reset-game.js",
-    "action": "node action.js",
-    "status": "node status.js",
-    "get-scorecard": "node get-scorecard.js"
+    "list-games": "node actions/list-games.js",
+    "open-scorecard": "node actions/open-scorecard.js",
+    "close-scorecard": "node actions/close-scorecard.js",
+    "start-game": "node actions/start-game.js",
+    "reset-game": "node actions/reset-game.js",
+    "action": "node actions/action.js",
+    "status": "node actions/status.js",
+    "get-scorecard": "node actions/get-scorecard.js"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.55",

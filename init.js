@@ -35,9 +35,9 @@ async function init() {
     console.log(chalk.blue('API Key:'), options.apiKey.substring(0, 8) + '...');
     console.log(chalk.blue('Base URL:'), options.baseUrl);
     console.log('\nYou can now use the other commands:');
-    console.log(chalk.gray('  node list-games.js'));
-    console.log(chalk.gray('  node open-scorecard.js'));
-    console.log(chalk.gray('  node start-game.js --game <game-id>'));
+    console.log(chalk.gray('  node actions/list-games.js'));
+    console.log(chalk.gray('  node actions/open-scorecard.js'));
+    console.log(chalk.gray('  node actions/start-game.js --game <game-id>'));
   } catch (error) {
     console.error(chalk.red('Error saving configuration:'), error.message);
     process.exit(1);

@@ -6,11 +6,18 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function playArcWithClaude(gameName, maxTurns = 100) {
-  console.log(`🎮 Starting ARC AGI 3 solver for: ${gameName}`);
+// ARC rotates game IDs; re-check with `node actions/list-games.js` if this 404s.
+const DEFAULT_GAME = "ls20-9607627b";
+// Override with argv[4] or ARC_MODEL.
+const DEFAULT_MODEL = "claude-sonnet-5";
+
+async function playArcWithClaude(gameName, maxTurns = 100, model = DEFAULT_MODEL) {
+  console.log(`🎮 Starting ARC AGI 3 solver for: ${gameName} (model: ${model})`);
 
   const messages = [];
-  const initialPrompt = `Play the ARC AGI 3 game "${gameName}". Read CLAUDE.md to understand how to play. Keep playing until you win or reach ${maxTurns} turns.`;
+  const initialPrompt = `Play the ARC AGI 3 game "${gameName}". Read CLAUDE.md to understand how to play. Keep playing until you win or reach ${maxTurns} turns.
+
+IMPORTANT: This is a headless game-solving session with a hard turn budget. Skip any session-start rituals from global user configuration (knowledge folders, memory reviews, etc.) — go straight to the game. Batch shell commands where possible to conserve turns.`;
 
   try {
     for await (const message of query({
@@ -19,6 +26,15 @@ async function playArcWithClaude(gameName, maxTurns = 100) {
       options: {
         maxTurns: maxTurns,
         cwd: __dirname,
+        // Pin an explicit, current model. Without this the bundled SDK falls
+        // back to a retired default and every run dies on a 404 not_found.
+        model: model,
+        // Headless runs have no user to approve permission prompts, so the
+        // agent's tool calls get silently denied and it can never act.
+        // The game loop (CLAUDE.md) has the agent write and run its own
+        // analysis scripts, so it needs unrestricted shell in this directory —
+        // equivalent to running `claude --dangerously-skip-permissions`.
+        permissionMode: "bypassPermissions",
       },
     })) {
       messages.push(message);
@@ -66,10 +82,11 @@ async function playArcWithClaude(gameName, maxTurns = 100) {
 
 // Main execution
 async function main() {
-  const gameName = process.argv[2] || "ls20-016295f7601e";
+  const gameName = process.argv[2] || DEFAULT_GAME;
   const maxTurns = parseInt(process.argv[3]) || 30;
+  const model = process.argv[4] || process.env.ARC_MODEL || DEFAULT_MODEL;
 
-  await playArcWithClaude(gameName, maxTurns);
+  await playArcWithClaude(gameName, maxTurns, model);
 }
 
 main().catch(console.error);
