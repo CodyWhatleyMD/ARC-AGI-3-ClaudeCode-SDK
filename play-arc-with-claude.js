@@ -7,7 +7,9 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ARC rotates game IDs; re-check with `node actions/list-games.js` if this 404s.
-const DEFAULT_GAME = "ls20-9607627b";
+// FT09 is among the games frontier models can reliably beat (see
+// arcprize.org/results/anthropic-claude-opus-5) — a sane out-of-box demo.
+const DEFAULT_GAME = "ft09-0d8bbf25";
 // Override with argv[4] or ARC_MODEL.
 const DEFAULT_MODEL = "claude-sonnet-5";
 
