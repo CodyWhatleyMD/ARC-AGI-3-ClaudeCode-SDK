@@ -36,7 +36,10 @@ async function getScorecard() {
     
     console.log(chalk.yellow.bold('Summary:'));
     console.log(chalk.gray('Card ID:'), scorecard.card_id);
-    console.log(chalk.gray('API Key:'), scorecard.api_key);
+    if (scorecard.api_key) {
+      // Don't echo the full key into logs/transcripts
+      console.log(chalk.gray('API Key:'), scorecard.api_key.substring(0, 8) + '...');
+    }
     console.log(chalk.blue('Games Won:'), `${scorecard.won}/${scorecard.played}`);
     console.log(chalk.blue('Total Score:'), scorecard.score);
     console.log(chalk.blue('Total Actions:'), scorecard.total_actions);

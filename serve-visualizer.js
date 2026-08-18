@@ -35,6 +35,13 @@ const server = createServer(async (req, res) => {
       res.end('Forbidden');
       return;
     }
+
+    // Security: never serve the API key
+    if (filePath === '/config.json') {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
     
     // Construct full path
     const fullPath = join(__dirname, filePath);
@@ -46,13 +53,9 @@ const server = createServer(async (req, res) => {
     const ext = extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
     
-    // Enable CORS for local development
-    res.writeHead(200, {
-      'Content-Type': contentType,
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
-    });
+    // Same-origin page; no CORS needed (a wildcard here would let any
+    // website in the user's browser read these files cross-origin).
+    res.writeHead(200, { 'Content-Type': contentType });
     
     res.end(content);
   } catch (error) {
@@ -67,7 +70,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`\n🎮 ARC AGI 3 Visualizer Server Running!`);
   console.log(`\n📍 Open in your browser:`);
   console.log(`   http://localhost:${PORT}\n`);
