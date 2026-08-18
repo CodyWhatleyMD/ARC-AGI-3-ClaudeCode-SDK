@@ -19,7 +19,7 @@ async function playArcWithClaude(gameName, maxTurns = 100, model = DEFAULT_MODEL
   const messages = [];
   const initialPrompt = `Play the ARC AGI 3 game "${gameName}". Read CLAUDE.md to understand how to play. Keep playing until you win or reach ${maxTurns} turns.
 
-IMPORTANT: This is a headless game-solving session with a hard turn budget. Skip any session-start rituals from global user configuration (knowledge folders, memory reviews, etc.) — go straight to the game. Batch shell commands where possible to conserve turns.
+IMPORTANT: This is a headless game-solving session with a hard turn budget. Skip startup tasks from global user configuration that are unrelated to the game — go straight to playing. Batch shell commands where possible to conserve turns.
 
 Before starting a new game, run node actions/status.js — if an in-progress (NOT_FINISHED) session for "${gameName}" already exists, CONTINUE it with actions/action.js instead of calling start-game.js (which resets progress to level 0). Your notes and scripts from earlier sessions live in notes/ and games/${gameName}/scripts/ — reuse them.`;
 
