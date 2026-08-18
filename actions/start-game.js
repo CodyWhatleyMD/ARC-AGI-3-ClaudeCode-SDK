@@ -8,6 +8,7 @@ import {
   readJSON,
   writeJSON,
   saveFrame,
+  frameStats,
   CONFIG_FILE,
   SESSIONS_FILE,
   GAMES_DIR,
@@ -49,13 +50,15 @@ async function startGame() {
 
     console.log(response);
 
+    const stats = frameStats(response);
     const sessions = await readJSON(SESSIONS_FILE);
     sessions[response.guid] = {
       gameId: options.game,
       guid: response.guid,
       state: response.state,
-      score: response.score,
-      winScore: response.win_score,
+      score: stats.score,
+      winScore: stats.winScore,
+      availableActions: stats.availableActions,
       frameCount: 1,
       actionCount: 0,
       startTime: new Date().toISOString(),
@@ -82,14 +85,14 @@ async function startGame() {
         },
         strategies: [],
         sessionId: response.guid,
-        currentScore: response.score,
-        targetScore: response.win_score,
+        currentScore: stats.score,
+        targetScore: stats.winScore,
         lastUpdated: new Date().toISOString(),
       };
     } else {
       gameData.sessionId = response.guid;
-      gameData.currentScore = response.score;
-      gameData.targetScore = response.win_score;
+      gameData.currentScore = stats.score;
+      gameData.targetScore = stats.winScore;
       gameData.lastUpdated = new Date().toISOString();
     }
     await writeJSON(gameJsonPath, gameData);
@@ -106,9 +109,15 @@ async function startGame() {
     console.log(chalk.yellow("Session ID:"), response.guid);
     console.log(chalk.blue("State:"), response.state);
     console.log(
-      chalk.blue("Score:"),
-      `${response.score}/${response.win_score}`
+      chalk.blue("Levels completed:"),
+      `${stats.score}/${stats.winScore}`
     );
+    if (stats.availableActions) {
+      console.log(
+        chalk.blue("Available actions:"),
+        stats.availableActions.map((a) => `ACTION${a}`).join(", ")
+      );
+    }
     console.log(
       chalk.gray(
         `Frame size: ${response.frame[0].length}x${response.frame[0][0].length}`

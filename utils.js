@@ -49,22 +49,46 @@ export async function makeRequest(endpoint, options = {}) {
   }
 
   const fetch = (await import('node-fetch')).default;
-  
-  const response = await fetch(`${config.baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      'X-API-Key': config.apiKey,
-      'Content-Type': 'application/json',
-      ...options.headers
+
+  // The API intermittently 400s with SERVER_ERROR "game ... not found" and can
+  // return 5xx under load; both are transient and safe to retry (the action did
+  // not execute). Retry a few times with backoff before giving up.
+  const MAX_ATTEMPTS = 4;
+  let lastError;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const response = await fetch(`${config.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'X-API-Key': config.apiKey,
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+
+    if (response.ok) {
+      return response.json();
     }
-  });
 
-  if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`API Error ${response.status}: ${errorText}`);
-  }
+    lastError = new Error(`API Error ${response.status}: ${errorText}`);
 
-  return response.json();
+    const transient = response.status >= 500 ||
+      (response.status === 400 && errorText.includes('SERVER_ERROR'));
+    if (!transient || attempt === MAX_ATTEMPTS) {
+      throw lastError;
+    }
+    await new Promise(r => setTimeout(r, attempt * 3000));
+  }
+}
+
+// The ARC-AGI-3 API renamed its progress fields (score → levels_completed,
+// win_score → win_levels) and added available_actions. Normalize both shapes.
+export function frameStats(response) {
+  return {
+    score: response.levels_completed ?? response.score ?? 0,
+    winScore: response.win_levels ?? response.win_score ?? 0,
+    availableActions: response.available_actions ?? null,
+  };
 }
 
 export async function saveFrame(guid, frameNumber, frameData, action, caption = '') {
@@ -83,14 +107,16 @@ export async function saveFrame(guid, frameNumber, frameData, action, caption = 
   const frameFileName = `frame_${frameNumber.toString().padStart(4, '0')}.json`;
   const frameFile = path.join(frameDir, frameFileName);
   
+  const stats = frameStats(frameData);
   const frameRecord = {
     frameNumber,
     timestamp: new Date().toISOString(),
     action: action || { type: 'UNKNOWN', params: {} },
     caption,
     state: frameData.state,
-    score: frameData.score,
-    winScore: frameData.win_score,
+    score: stats.score,
+    winScore: stats.winScore,
+    availableActions: stats.availableActions,
     frame: frameData.frame,
     changes: {
       description: caption || 'Frame captured',
@@ -114,7 +140,7 @@ export async function saveFrame(guid, frameNumber, frameData, action, caption = 
   
   summary.totalFrames = frameNumber + 1;
   summary.finalState = frameData.state;
-  summary.finalScore = frameData.score;
+  summary.finalScore = stats.score;
   summary.timeline.push({
     frame: frameNumber,
     action: action?.type || 'UNKNOWN',
@@ -128,7 +154,7 @@ export async function saveFrame(guid, frameNumber, frameData, action, caption = 
     const gameJsonPath = path.join(GAMES_DIR, gameId, 'game.json');
     const gameData = await readJSON(gameJsonPath);
     if (gameData) {
-      gameData.currentScore = frameData.score;
+      gameData.currentScore = stats.score;
       gameData.sessionId = guid;
       gameData.lastUpdated = new Date().toISOString();
       await writeJSON(gameJsonPath, gameData);

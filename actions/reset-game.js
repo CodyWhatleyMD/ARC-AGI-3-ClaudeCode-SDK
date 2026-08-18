@@ -1,6 +1,6 @@
 import { program } from 'commander';
 import chalk from 'chalk';
-import { makeRequest, readJSON, writeJSON, saveFrame, CONFIG_FILE, SESSIONS_FILE } from '../utils.js';
+import { makeRequest, readJSON, writeJSON, saveFrame, frameStats, CONFIG_FILE, SESSIONS_FILE } from '../utils.js';
 
 program
   .option('--game <game-id>', 'Game ID to reset (uses last active if not specified)')
@@ -86,15 +86,20 @@ async function resetGame() {
       resetType
     );
     
+    const stats = frameStats(finalResponse);
     session.state = finalResponse.state;
-    session.score = finalResponse.score;
+    session.score = stats.score;
+    if (stats.availableActions) session.availableActions = stats.availableActions;
     session.frameCount++;
-    
+
     await writeJSON(SESSIONS_FILE, sessions);
-    
+
     console.log(chalk.green(`\n✓ ${resetType} successful!`));
     console.log(chalk.blue('State:'), finalResponse.state);
-    console.log(chalk.blue('Score:'), `${finalResponse.score}/${finalResponse.win_score}`);
+    console.log(chalk.blue('Levels completed:'), `${stats.score}/${stats.winScore}`);
+    if (stats.availableActions) {
+      console.log(chalk.blue('Available actions:'), stats.availableActions.map(a => `ACTION${a}`).join(', '));
+    }
     
     console.log('\nNext steps:');
     console.log(chalk.gray('  node status.js          # View current state'));

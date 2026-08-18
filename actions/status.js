@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import path from 'path';
-import { readJSON, SESSIONS_FILE, CONFIG_FILE, FRAMES_DIR } from '../utils.js';
+import { readJSON, SESSIONS_FILE, CONFIG_FILE, FRAMES_DIR, GAMES_DIR } from '../utils.js';
 import fs from 'fs/promises';
 
 async function showStatus() {
@@ -29,14 +29,17 @@ async function showStatus() {
     console.log(chalk.blue.bold('Game Sessions:'));
     console.log();
     
-    for (const [gameId, session] of Object.entries(sessions)) {
+    for (const [guid, session] of Object.entries(sessions)) {
       const isActive = session.state === 'NOT_FINISHED';
       const statusIcon = isActive ? '🎮' : session.state === 'WIN' ? '🏆' : '💀';
-      
-      console.log(`${statusIcon} ${chalk.yellow(gameId)}`);
+
+      console.log(`${statusIcon} ${chalk.yellow(session.gameId || guid)}`);
       console.log(chalk.gray('  Session ID:'), session.guid);
       console.log(chalk.gray('  State:'), isActive ? chalk.green(session.state) : chalk.red(session.state));
-      console.log(chalk.gray('  Score:'), `${session.score}/${session.winScore}`);
+      console.log(chalk.gray('  Levels:'), `${session.score}/${session.winScore}`);
+      if (session.availableActions) {
+        console.log(chalk.gray('  Available actions:'), session.availableActions.map(a => `ACTION${a}`).join(', '));
+      }
       console.log(chalk.gray('  Actions:'), session.actionCount);
       console.log(chalk.gray('  Frames:'), session.frameCount);
       
@@ -46,7 +49,11 @@ async function showStatus() {
       const seconds = Math.floor((duration % 60000) / 1000);
       console.log(chalk.gray('  Duration:'), `${minutes}m ${seconds}s`);
       
-      const frameDir = path.join(FRAMES_DIR, session.guid);
+      // Frames live under games/<gameId>/frames/ since the storage refactor;
+      // fall back to the deprecated frames/<guid>/ location for old sessions.
+      const frameDir = session.gameId
+        ? path.join(GAMES_DIR, session.gameId, 'frames')
+        : path.join(FRAMES_DIR, session.guid);
       try {
         const frames = await fs.readdir(frameDir);
         const frameFiles = frames.filter(f => f.startsWith('frame_'));
