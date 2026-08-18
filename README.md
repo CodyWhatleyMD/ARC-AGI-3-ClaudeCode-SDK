@@ -15,8 +15,8 @@ Read more on ARC here: https://three.arcprize.org/
 
 ```bash
 # Clone the repository
-git clone git@github.com:ThariqS/Claude-Code-ARC-AGI-3.git
-cdC laude-Code-ARC-AGI-3
+git clone https://github.com/ThariqS/ARC-AGI-3-ClaudeCode-SDK.git
+cd ARC-AGI-3-ClaudeCode-SDK
 
 # Install required dependencies
 npm install
@@ -54,15 +54,22 @@ node actions/list-games.js
 Use the `play-arc-with-claude.js` script to run the Claude Code SDK to independently solve ARC AGI 3 puzzles:
 
 ```bash
-# Basic usage (uses default game and 50 turns)
+# Basic usage (default game, 30 turns)
 node play-arc-with-claude.js
 
-# Specify a specific game
-node play-arc-with-claude.js ls20-016295f7601e
+# Specify a game (IDs rotate — get current ones from node actions/list-games.js)
+node play-arc-with-claude.js ls20-9607627b
 
 # Specify game and 100 maximum turns
-node play-arc-with-claude.js ls20-016295f7601e 100
+node play-arc-with-claude.js ls20-9607627b 100
+
+# Optionally pick the model (also settable via ARC_MODEL env var)
+node play-arc-with-claude.js ls20-9607627b 100 claude-sonnet-5
 ```
+
+> **Note:** the solver runs the Claude Code agent with permissions bypassed
+> (`bypassPermissions`) so it can execute the game scripts and write its own
+> analysis helpers unattended. Only run it in a directory you trust it to work in.
 
 This script will:
 
@@ -73,8 +80,9 @@ This script will:
 
 ### Script Arguments
 
-- **Game Name** (optional): The ID of the game to play. Defaults to "ls20-016295f7601e"
-- **Max Turns** (optional): Maximum number of turns before stopping. Defaults to 50
+- **Game Name** (optional): The ID of the game to play (see `node actions/list-games.js` for current IDs)
+- **Max Turns** (optional): Maximum number of agent turns before stopping. Defaults to 30
+- **Model** (optional): Claude model ID to use. Defaults to "claude-sonnet-5"; also settable via `ARC_MODEL`
 
 ## How to Play
 
@@ -103,11 +111,13 @@ node actions/start-game.js --game [game-id]
 Simple directional moves:
 
 ```bash
-node actions/action.js --type 1  # LEFT
-node actions/action.js --type 2  # RIGHT
-node actions/action.js --type 3  # UP
-node actions/action.js --type 4  # DOWN
-node actions/action.js --type 5  # ENTER
+# Conventionally: 1=Up, 2=Down, 3=Left, 4=Right, 5=Enter/Space —
+# but the actual effect depends on the game; discover it by experimenting.
+node actions/action.js --type 1
+node actions/action.js --type 2
+node actions/action.js --type 3
+node actions/action.js --type 4
+node actions/action.js --type 5
 ```
 
 Click at specific coordinates:
@@ -138,6 +148,17 @@ node actions/reset-game.js
 - `games.json` - Available games cache
 - `sessions.json` - Active game sessions
 - `scorecards.json` - Performance history
+
+## Clean Scorecard Runs
+
+ARC-AGI-3's design principles include "no pre-loaded knowledge." The `notes/` and
+`games/` folders act as persistent memory across sessions — useful while iterating,
+but for a scorecard run you intend to report, start clean:
+
+```bash
+rm -rf games/ sessions.json
+rm -f notes/game-*.md   # keep WRITING_NOTES.MD (methodology, not game knowledge)
+```
 
 ## Tips for Success
 
